@@ -25,6 +25,10 @@ func (storage *KeysStorage) GetKey(key string) (value interface{}, found bool) {
 	return
 }
 
+func (storage *KeysStorage) DeleteKey(key string) {
+	delete(storage.Keys, key)
+}
+
 type KeysResponse struct {
 	Status string `json:"status"`
 	Error string `json:"error,omitempty"`
@@ -107,6 +111,15 @@ func viewOrDelete(w http.ResponseWriter, r *http.Request) {
 			}
 
 			response.Data = string(data)
+		case "DELETE":
+			matches := keysRegexp.FindStringSubmatch(r.URL.String())
+			key := matches[1]
+			if key == "" {
+				response.OutputError("Key cannot be empty")
+				break
+			}
+			keysStorage.DeleteKey(key)
+			response.Status = "ok"
 		default:
 			response.OutputError("Wrong method")
 	}
