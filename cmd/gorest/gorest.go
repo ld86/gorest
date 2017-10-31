@@ -21,12 +21,16 @@ func (storage *KeysStorage) AddKey(key string, value interface{}) {
 }
 
 func (storage *KeysStorage) GetKey(key string) (value interface{}, found bool) {
+	storage.Mutex.Lock()
 	value, found = storage.Keys[key]
+	storage.Mutex.Unlock()
 	return
 }
 
 func (storage *KeysStorage) DeleteKey(key string) {
+	storage.Mutex.Lock()
 	delete(storage.Keys, key)
+	storage.Mutex.Unlock()
 }
 
 type KeysResponse struct {
@@ -127,7 +131,15 @@ func viewOrDelete(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "%s", responseJson)
 }
 
+func showError(w http.ResponseWriter, r *http.Request) {
+	response := KeysResponse{}
+	response.OutputError("Wrong URL")
+	responseJson, _ := json.Marshal(response)
+	fmt.Fprintf(w, "%s", responseJson)
+}
+
 func main() {
+	http.HandleFunc("/", showError)
     http.HandleFunc("/keys", addOrViewAll)
     http.HandleFunc("/keys/", viewOrDelete)
     http.ListenAndServe(":8080", nil)
