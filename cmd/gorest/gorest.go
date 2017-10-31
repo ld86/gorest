@@ -20,8 +20,9 @@ func (storage *KeysStorage) AddKey(key string, value interface{}) {
 }
 
 type KeysResponse struct {
-	Error string `json:"error"`
-	ErrorPresent bool `json:"error_present"`
+	Status string `json:"status"`
+	Error string `json:"error,omitempty"`
+	Data string`json:"data,omitempty"`
 }
 
 type KeysRequest struct {
@@ -42,7 +43,7 @@ func parseRequest(r io.ReadCloser) (KeysRequest, error) {
 }
 
 func (response *KeysResponse) OutputError(message string) {
-	response.ErrorPresent = true
+	response.Status = "error"
 	response.Error = message
 }
 
@@ -58,8 +59,16 @@ func addOrViewAll(w http.ResponseWriter, r *http.Request) {
 			for key, value := range request.Keys {
 				keysStorage.AddKey(key, value)
 			}
+			response.Status = "ok"
 		case "GET":
-			fmt.Println(keysStorage.Keys)
+			data, err := json.Marshal(keysStorage.Keys)
+			if err != nil {
+				response.OutputError("Internal storage error")
+				break
+			}
+
+			response.Status = "ok"
+			response.Data = string(data)
 		default:
 			response.OutputError("Wrong method")
 	}
